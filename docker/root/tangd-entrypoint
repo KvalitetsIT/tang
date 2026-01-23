@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+TANG_LISTEN_PORT=${TANG_LISTEN_PORT:-80}
+
+mkdir -p /var/db/tang
+
+socat tcp-l:$TANG_LISTEN_PORT,reuseaddr,fork exec:"/usr/libexec/tangd /var/db/tang"
