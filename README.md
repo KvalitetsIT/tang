@@ -106,7 +106,7 @@ The following table lists the configurable parameters of the Tang chart and thei
 | `replicaCount` | Number of Tang replicas | `1` |
 | `image.repository` | Tang image repository | `tang` |
 | `image.tag` | Tang image tag | `latest` |
-| `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `image.pullPolicy` | Image pull policy | `Always` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
 | `service.port` | Service port | `8080` |
 | `ingress.enabled` | Enable ingress | `false` |
