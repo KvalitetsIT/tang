@@ -1,0 +1,66 @@
+# Default values for tang chart
+replicaCount: 1
+
+image:
+  repository: kvalitetsit/tang
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: tang.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: tang-tls
+  #    hosts:
+  #      - tang.local
+
+persistence:
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+  appArmorProfile:
+    type: RuntimeDefault
+
+readinessProbe:
+  httpGet:
+    path: /adv
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

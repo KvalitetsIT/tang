@@ -1,0 +1,13 @@
+#!/bin/sh
+
+DB_PATH=/var/db/tang
+
+# Ensure keys exist
+if [ -z "$(ls -A "$DB_PATH")" ]; then
+    echo "Generating keys..."
+    /usr/libexec/tangd-keygen "$DB_PATH" 2>/dev/null
+fi
+
+echo "Starting Tang server on port 8080..."
+
+/usr/libexec/tangd -l -p 8080 "$DB_PATH"
