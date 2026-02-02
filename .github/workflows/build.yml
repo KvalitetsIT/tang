@@ -6,6 +6,8 @@ on:
     - cron: "0 03 * * *"        
   push:
     branches: [ main ]
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build:
