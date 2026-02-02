@@ -97,7 +97,34 @@ To enable ingress:
 helm install tang ./chart --set ingress.enabled=true --set ingress.hosts[0].host=tang.example.com
 ```
 
+## Installing from Helm Repository
+
+The Tang chart is also available from the KvalitetsIT Helm repository.
+
+### Add the Repository
+
+```bash
+helm repo add kvalitetsit https://kvalitetsit.github.io/helm-repo
+helm repo update
+```
+
+### Install the Chart
+
+Install the latest version:
+
+```bash
+helm install tang kvalitetsit/tang
+```
+
+Install a specific version:
+
+```bash
+helm install tang kvalitetsit/tang --version 0.1.0
+```
+
 ### Configuration
+
+The following table lists the configurable parameters of the Tang chart and their default values.
 
 The following table lists the configurable parameters of the Tang chart and their default values.
 
