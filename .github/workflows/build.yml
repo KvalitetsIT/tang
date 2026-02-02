@@ -59,7 +59,7 @@ jobs:
       - name: Is Tag Build
         id: tag
         if:  ${{ startsWith(github.ref, 'refs/tags/v') }}
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_OUTPUT
 
       - name: Build and test helm chart
         run: ./build/build-helm.sh tang ${{ steps.tag.outputs.VERSION }} ${{ steps.tag.outputs.VERSION }}
