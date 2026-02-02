@@ -9,6 +9,7 @@ This Docker image provides a Tang server running on Alpine Linux. Tang is a serv
 - Persistent key storage via Docker volume
 - Listens on port 8080
 - Includes Software Bill of Materials (SBOM) and build provenance
+- Tested in CI/CD pipeline
 
 ## Prerequisites
 

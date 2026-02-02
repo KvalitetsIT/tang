@@ -28,6 +28,22 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USER }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
+      - name: Build for testing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: tang:test
+
+      - name: Test the image
+        run: |
+          docker run -d --name tang-test -p 8080:8080 tang:test
+          sleep 5
+          curl -f http://localhost:8080/adv
+          docker stop tang-test
+          docker rm tang-test
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
