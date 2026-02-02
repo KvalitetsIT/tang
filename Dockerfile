@@ -3,8 +3,10 @@ FROM alpine:latest
 RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
     apk update && \
     apk add --no-cache \
-    tang \
-    socat && \
+    tang && \
+    apk upgrade --no-cache && \
+    apk del apk-tools && \
+    rm -rf /var/cache/apk/* && \
     addgroup -S tanggroup && \
     adduser -S tanguser -G tanggroup
 
