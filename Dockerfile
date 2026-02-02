@@ -5,7 +5,7 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     apk add --no-cache \
     tang && \
     apk upgrade --no-cache && \
-    apk del apk-tools && \
+    apk del apk-tools busybox curl && \
     rm -rf /var/cache/apk/* && \
     addgroup -S tanggroup && \
     adduser -S tanguser -G tanggroup
