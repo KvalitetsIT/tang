@@ -35,3 +35,5 @@ jobs:
           platforms: linux/amd64,linux/arm/v7,linux/arm64
           push: true
           tags: kvalitetsit/tang:latest,kvalitetsit/tang:${{ github.sha }}
+          sbom: true
+          provenance: true
