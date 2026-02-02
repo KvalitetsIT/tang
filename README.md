@@ -141,6 +141,6 @@ helm uninstall tang
 To remove the PVC:
 
 ```bash
-kubectl delete pvc tang-pvc
+kubectl delete pvc tang
 ``` 
 

@@ -34,7 +34,7 @@ spec:
       volumes:
         - name: tang-keys
           persistentVolumeClaim:
-            claimName: {{ include "tang.fullname" . }}-pvc
+            claimName: {{ include "tang.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
