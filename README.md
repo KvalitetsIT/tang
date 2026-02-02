@@ -15,6 +15,10 @@ This Docker image provides a Tang server running on Alpine Linux. Tang is a serv
 
 - Docker
 
+## Docker Hub
+
+Pre-built images are available on [Docker Hub](https://hub.docker.com/repository/docker/kvalitetsit/tang/general).
+
 ## Building the Image
 
 ```bash
