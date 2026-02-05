@@ -1,0 +1,178 @@
+{{- if .Values.backup.enabled }}
+{{- if not .Values.backup.s3.bucket }}
+{{- fail "backup.s3.bucket is required when backup is enabled" }}
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "tang.fullname" . }}-backup
+  labels:
+    {{- include "tang.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "tang.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: backup
+              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+              securityContext:
+                {{- toYaml .Values.containerSecurityContext | nindent 16 }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  
+                  echo "Starting tang keys backup at $(date)"
+                  
+                  # Configuration
+                  BACKUP_DIR="/var/db/tang"
+                  TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
+                  BACKUP_FILE="/tmp/tang-keys-${TIMESTAMP}.tar.gz"
+                  S3_BUCKET="{{ .Values.backup.s3.bucket }}"
+                  S3_PREFIX="{{ .Values.backup.s3.prefix }}"
+                  S3_REGION="{{ .Values.backup.s3.region }}"
+                  S3_ENDPOINT="{{ .Values.backup.s3.endpoint }}"
+                  RETENTION_DAYS="{{ .Values.backup.retentionDays }}"
+                  
+                  # Build AWS CLI options
+                  AWS_OPTS=""
+                  if [ -n "$S3_ENDPOINT" ]; then
+                    AWS_OPTS="--endpoint-url $S3_ENDPOINT"
+                    echo "Using custom S3 endpoint: $S3_ENDPOINT"
+                  fi
+                  if [ -n "$S3_REGION" ]; then
+                    AWS_OPTS="$AWS_OPTS --region $S3_REGION"
+                  fi
+                  
+                  # Check if backup directory exists and has files
+                  if [ ! -d "$BACKUP_DIR" ]; then
+                    echo "ERROR: Backup directory $BACKUP_DIR does not exist"
+                    exit 1
+                  fi
+                  
+                  if [ -z "$(ls -A $BACKUP_DIR)" ]; then
+                    echo "WARNING: Backup directory $BACKUP_DIR is empty"
+                    exit 0
+                  fi
+                  
+                  # Create compressed backup
+                  echo "Compressing $BACKUP_DIR to $BACKUP_FILE"
+                  tar -czf "$BACKUP_FILE" -C "$(dirname $BACKUP_DIR)" "$(basename $BACKUP_DIR)"
+                  
+                  # Verify backup file was created
+                  if [ ! -f "$BACKUP_FILE" ]; then
+                    echo "ERROR: Failed to create backup file"
+                    exit 1
+                  fi
+                  
+                  BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+                  echo "Backup file created: $BACKUP_FILE (size: $BACKUP_SIZE)"
+                  
+                  # Upload to S3
+                  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/tang-keys-${TIMESTAMP}.tar.gz"
+                  echo "Uploading to $S3_PATH"
+                  
+                  aws s3 cp "$BACKUP_FILE" "$S3_PATH" $AWS_OPTS
+                  
+                  if [ $? -eq 0 ]; then
+                    echo "Successfully uploaded backup to S3"
+                  else
+                    echo "ERROR: Failed to upload backup to S3"
+                    exit 1
+                  fi
+                  
+                  # Cleanup local backup file
+                  rm -f "$BACKUP_FILE"
+                  echo "Removed local backup file"
+                  
+                  # Apply retention policy if configured
+                  if [ "$RETENTION_DAYS" -gt 0 ]; then
+                    echo "Applying retention policy: keeping backups from last $RETENTION_DAYS days"
+                    
+                    # List all backups and delete old ones
+                    CUTOFF_DATE=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d 2>/dev/null || date -v-${RETENTION_DAYS}d +%Y-%m-%d)
+                    
+                    aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX}/" $AWS_OPTS | \
+                      awk '{print $4}' | \
+                      grep '^tang-keys-' | \
+                      while read -r file; do
+                        # Extract date from filename (format: tang-keys-YYYY-MM-DD-HH-MM-SS.tar.gz)
+                        FILE_DATE=$(echo "$file" | sed 's/tang-keys-\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\).*/\1/')
+                        
+                        if [ "$FILE_DATE" \< "$CUTOFF_DATE" ]; then
+                          echo "Deleting old backup: $file (date: $FILE_DATE)"
+                          aws s3 rm "s3://${S3_BUCKET}/${S3_PREFIX}/$file" $AWS_OPTS
+                        fi
+                      done
+                    
+                    echo "Retention policy applied"
+                  fi
+                  
+                  echo "Backup completed successfully at $(date)"
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.secretName }}
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.secretName }}
+                      key: AWS_SECRET_ACCESS_KEY
+                {{- if .Values.backup.s3.region }}
+                - name: AWS_DEFAULT_REGION
+                  value: {{ .Values.backup.s3.region | quote }}
+                {{- end }}
+              volumeMounts:
+                - name: tang-keys
+                  mountPath: /var/db/tang
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+          volumes:
+            - name: tang-keys
+              persistentVolumeClaim:
+                claimName: {{ include "tang.fullname" . }}
+            - name: tmp
+              emptyDir: {}
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/name
+                        operator: In
+                        values:
+                          - {{ include "tang.name" . }}
+                      - key: app.kubernetes.io/component
+                        operator: NotIn
+                        values:
+                          - backup
+                  topologyKey: kubernetes.io/hostname
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

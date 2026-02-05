@@ -74,3 +74,28 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+backup:
+  enabled: false  # Disabled by default
+  schedule: "0 2 * * *"  # Daily at 2 AM UTC
+  image:
+    repository: amazon/aws-cli
+    tag: latest
+    pullPolicy: IfNotPresent
+  s3:
+    bucket: ""  # S3 bucket name (required if enabled)
+    region: ""  # AWS region (optional for S3-compatible storage)
+    endpoint: ""  # S3 endpoint URL (optional, for non-AWS S3-compatible storage like MinIO)
+    prefix: "tang-backups"  # Prefix/folder in S3 bucket
+  # Name of Kubernetes secret containing AWS credentials
+  # Secret should have keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+  secretName: "tang-s3-backup-secret"
+  # Retention: number of days to keep backups (0 = keep all)
+  retentionDays: 30
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
