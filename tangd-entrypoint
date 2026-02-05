@@ -2,6 +2,10 @@
 
 DB_PATH=/var/db/tang
 
+# Ensure directory exists and has correct permissions
+mkdir -p "$DB_PATH"
+chmod 755 "$DB_PATH"
+
 # Ensure keys exist
 if [ -z "$(ls -A "$DB_PATH")" ]; then
     echo "Generating keys..."
