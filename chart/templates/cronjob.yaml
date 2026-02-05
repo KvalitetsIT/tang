@@ -150,7 +150,7 @@ spec:
           volumes:
             - name: tang-keys
               persistentVolumeClaim:
-                claimName: {{ include "tang.fullname" . }}
+                claimName: {{ include "tang.fullname" . }}-keys
             - name: tmp
               emptyDir: {}
           affinity:
