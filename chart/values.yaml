@@ -40,19 +40,24 @@ resources:
     cpu: 50m
     memory: 64Mi
 
-securityContext:
+# Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+  appArmorProfile:
+    type: RuntimeDefault
+
+# Container-level security context
+containerSecurityContext:
   capabilities:
     drop:
       - ALL
   readOnlyRootFilesystem: true
   allowPrivilegeEscalation: false
-  runAsNonRoot: true
-  runAsUser: 1000
-  runAsGroup: 1000
-  seccompProfile:
-    type: RuntimeDefault
-  appArmorProfile:
-    type: RuntimeDefault
 
 readinessProbe:
   httpGet:
