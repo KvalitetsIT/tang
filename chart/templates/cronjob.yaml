@@ -43,11 +43,11 @@ spec:
                   BACKUP_DIR="/var/db/tang"
                   TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
                   # Backup path in S3: bucket/prefix/timestamp/
-                  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/${TIMESTAMP}"
                   S3_BUCKET="{{ .Values.backup.s3.bucket }}"
                   S3_PREFIX="{{ .Values.backup.s3.prefix }}"
                   S3_REGION="{{ .Values.backup.s3.region }}"
                   S3_ENDPOINT="{{ .Values.backup.s3.endpoint }}"
+                  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/${TIMESTAMP}"
                   RETENTION_DAYS="{{ .Values.backup.retentionDays }}"
                   
                   # Build AWS CLI options
@@ -78,7 +78,6 @@ spec:
                     exit 0
                   fi
                   
-                  # Create compressed backup
                   # Upload keys to S3
                   echo "Uploading keys from $BACKUP_DIR to $S3_PATH"
                   
