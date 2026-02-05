@@ -14,6 +14,7 @@ COPY tangd-entrypoint /usr/bin/
 
 RUN mkdir -p /var/db/tang && \
     chmod +x /usr/bin/tangd-entrypoint && \
+    chown -R tanguser:tanggroup /var/db/tang && \
     chmod 755 /var/db/tang
 
 USER tanguser
