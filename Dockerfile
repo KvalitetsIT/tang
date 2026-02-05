@@ -7,8 +7,8 @@ RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/reposi
     apk upgrade --no-cache && \
     apk del apk-tools busybox curl && \
     rm -rf /var/cache/apk/* && \
-    addgroup -S tanggroup && \
-    adduser -S tanguser -G tanggroup
+    addgroup -S -g 1000 tanggroup && \
+    adduser -S -u 1000 -G tanggroup tanguser
 
 COPY tangd-entrypoint /usr/bin/
 

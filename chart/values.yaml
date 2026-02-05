@@ -41,9 +41,14 @@ resources:
     memory: 64Mi
 
 securityContext:
+  capabilities:
+    drop:
+      - ALL
   readOnlyRootFilesystem: true
   allowPrivilegeEscalation: false
   runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
   seccompProfile:
     type: RuntimeDefault
   appArmorProfile:
