@@ -87,6 +87,12 @@ backup:
     region: ""  # AWS region (optional for S3-compatible storage)
     endpoint: ""  # S3 endpoint URL (optional, for non-AWS S3-compatible storage like MinIO)
     prefix: "tang-backups"  # Prefix/folder in S3 bucket
+    ssec:
+      enabled: false
+      # Kubernetes secret containing the 32-byte AES256 key
+      secretName: "tang-s3-ssec-key"
+      # Key within the secret
+      secretKey: "key"
   # Name of Kubernetes secret containing AWS credentials
   # Secret should have keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
   secretName: "tang-s3-backup-secret"

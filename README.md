@@ -150,6 +150,22 @@ The following table lists the configurable parameters of the Tang chart and thei
 
 **Note**: When `replicaCount > 1`, pods will automatically use `podAntiAffinity` to run on different nodes for high availability.
 
+### S3 Backup Key Generation (SSE-C)
+
+If you enable SSE-C for S3 backups (`backup.s3.ssec.enabled=true`), you must provide a 32-byte AES256 key.
+
+To generate a key on Linux:
+
+```bash
+openssl rand -out ssec.key 32
+```
+
+Create the Kubernetes secret from this key:
+
+```bash
+kubectl create secret generic tang-s3-ssec-key --from-file=key=ssec.key
+```
+
 ### Testing the Deployment
 
 Get the service details:

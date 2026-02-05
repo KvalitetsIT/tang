@@ -42,7 +42,8 @@ spec:
                   # Configuration
                   BACKUP_DIR="/var/db/tang"
                   TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
-                  BACKUP_FILE="/tmp/tang-keys-${TIMESTAMP}.tar.gz"
+                  # Backup path in S3: bucket/prefix/timestamp/
+                  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/${TIMESTAMP}"
                   S3_BUCKET="{{ .Values.backup.s3.bucket }}"
                   S3_PREFIX="{{ .Values.backup.s3.prefix }}"
                   S3_REGION="{{ .Values.backup.s3.region }}"
@@ -59,6 +60,13 @@ spec:
                     AWS_OPTS="$AWS_OPTS --region $S3_REGION"
                   fi
                   
+                  # Handle SSE-C
+                  if [ -n "$S3_SSEC_KEY" ]; then
+                    echo -n "$S3_SSEC_KEY" > /tmp/ssec.key
+                    AWS_OPTS="$AWS_OPTS --sse-c AES256 --sse-c-key fileb:///tmp/ssec.key"
+                    echo "Using SSE-C encryption"
+                  fi
+                  
                   # Check if backup directory exists and has files
                   if [ ! -d "$BACKUP_DIR" ]; then
                     echo "ERROR: Backup directory $BACKUP_DIR does not exist"
@@ -71,34 +79,24 @@ spec:
                   fi
                   
                   # Create compressed backup
-                  echo "Compressing $BACKUP_DIR to $BACKUP_FILE"
-                  tar -czf "$BACKUP_FILE" -C "$(dirname $BACKUP_DIR)" "$(basename $BACKUP_DIR)"
+                  # Upload keys to S3
+                  echo "Uploading keys from $BACKUP_DIR to $S3_PATH"
                   
-                  # Verify backup file was created
-                  if [ ! -f "$BACKUP_FILE" ]; then
-                    echo "ERROR: Failed to create backup file"
-                    exit 1
-                  fi
+                  # Iterate over files in keys directory
+                  for key_file in "$BACKUP_DIR"/*; do
+                    if [ -f "$key_file" ]; then
+                      filename=$(basename "$key_file")
+                      echo "Uploading $filename..."
+                      aws s3 cp "$key_file" "${S3_PATH}/${filename}" $AWS_OPTS
+                      
+                      if [ $? -ne 0 ]; then
+                        echo "ERROR: Failed to upload $filename"
+                        exit 1
+                      fi
+                    fi
+                  done
                   
-                  BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-                  echo "Backup file created: $BACKUP_FILE (size: $BACKUP_SIZE)"
-                  
-                  # Upload to S3
-                  S3_PATH="s3://${S3_BUCKET}/${S3_PREFIX}/tang-keys-${TIMESTAMP}.tar.gz"
-                  echo "Uploading to $S3_PATH"
-                  
-                  aws s3 cp "$BACKUP_FILE" "$S3_PATH" $AWS_OPTS
-                  
-                  if [ $? -eq 0 ]; then
-                    echo "Successfully uploaded backup to S3"
-                  else
-                    echo "ERROR: Failed to upload backup to S3"
-                    exit 1
-                  fi
-                  
-                  # Cleanup local backup file
-                  rm -f "$BACKUP_FILE"
-                  echo "Removed local backup file"
+                  echo "Successfully uploaded all keys to S3"
                   
                   # Apply retention policy if configured
                   if [ "$RETENTION_DAYS" -gt 0 ]; then
@@ -108,15 +106,19 @@ spec:
                     CUTOFF_DATE=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d 2>/dev/null || date -v-${RETENTION_DAYS}d +%Y-%m-%d)
                     
                     aws s3 ls "s3://${S3_BUCKET}/${S3_PREFIX}/" $AWS_OPTS | \
-                      awk '{print $4}' | \
-                      grep '^tang-keys-' | \
-                      while read -r file; do
-                        # Extract date from filename (format: tang-keys-YYYY-MM-DD-HH-MM-SS.tar.gz)
-                        FILE_DATE=$(echo "$file" | sed 's/tang-keys-\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\).*/\1/')
-                        
-                        if [ "$FILE_DATE" \< "$CUTOFF_DATE" ]; then
-                          echo "Deleting old backup: $file (date: $FILE_DATE)"
-                          aws s3 rm "s3://${S3_BUCKET}/${S3_PREFIX}/$file" $AWS_OPTS
+                      grep "PRE" | \
+                      awk '{print $2}' | \
+                      sed 's/\///g' | \
+                      while read -r backup_folder; do
+                        # Check if folder name format matches timestamp (YYYY-MM-DD-HH-MM-SS)
+                        if echo "$backup_folder" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}$'; then
+                          # Extract date from folder name
+                          FOLDER_DATE=$(echo "$backup_folder" | cut -d- -f1-3)
+                          
+                          if [ "$FOLDER_DATE" \< "$CUTOFF_DATE" ]; then
+                            echo "Deleting old backup folder: $backup_folder (date: $FOLDER_DATE)"
+                            aws s3 rm "s3://${S3_BUCKET}/${S3_PREFIX}/$backup_folder" --recursive $AWS_OPTS
+                          fi
                         fi
                       done
                     
@@ -138,6 +140,13 @@ spec:
                 {{- if .Values.backup.s3.region }}
                 - name: AWS_DEFAULT_REGION
                   value: {{ .Values.backup.s3.region | quote }}
+                {{- end }}
+                {{- if .Values.backup.s3.ssec.enabled }}
+                - name: S3_SSEC_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.s3.ssec.secretName }}
+                      key: {{ .Values.backup.s3.ssec.secretKey }}
                 {{- end }}
               volumeMounts:
                 - name: tang-keys
