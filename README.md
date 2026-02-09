@@ -126,8 +126,6 @@ helm install tang kvalitetsit/tang --version 0.1.0
 
 The following table lists the configurable parameters of the Tang chart and their default values.
 
-The following table lists the configurable parameters of the Tang chart and their default values.
-
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `replicaCount` | Number of Tang replicas | `1` |
