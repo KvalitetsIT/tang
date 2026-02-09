@@ -143,7 +143,6 @@ spec:
                 - name: AWS_DEFAULT_REGION
                   value: {{ .Values.backup.s3.region | quote }}
                 {{- end }}
-                {{- end }}
                 {{- if .Values.backup.s3.ssec.enabled }}
                 - name: S3_SSEC_KEY_FILE
                   value: "/var/run/secrets/ssec/{{ .Values.backup.s3.ssec.secretKey }}"
