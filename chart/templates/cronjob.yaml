@@ -52,6 +52,7 @@ spec:
                   
                   # Build AWS CLI options
                   AWS_OPTS=""
+                  SSEC_OPTS=""
                   if [ -n "$S3_ENDPOINT" ]; then
                     AWS_OPTS="--endpoint-url $S3_ENDPOINT"
                     echo "Using custom S3 endpoint: $S3_ENDPOINT"
@@ -63,7 +64,7 @@ spec:
                   # Handle SSE-C
                   if [ -n "$S3_SSEC_KEY_FILE" ]; then
                     if [ -f "$S3_SSEC_KEY_FILE" ]; then
-                       AWS_OPTS="$AWS_OPTS --sse-c AES256 --sse-c-key fileb://$S3_SSEC_KEY_FILE"
+                       SSEC_OPTS="--sse-c AES256 --sse-c-key fileb://$S3_SSEC_KEY_FILE"
                        echo "Using SSE-C encryption"
                     else
                        echo "WARNING: SSE-C key file defined but not found at $S3_SSEC_KEY_FILE"
@@ -89,7 +90,7 @@ spec:
                     if [ -f "$key_file" ]; then
                       filename=$(basename "$key_file")
                       echo "Uploading $filename..."
-                      aws s3 cp "$key_file" "${S3_PATH}/${filename}" $AWS_OPTS
+                      aws s3 cp "$key_file" "${S3_PATH}/${filename}" $AWS_OPTS $SSEC_OPTS
                       
                       if [ $? -ne 0 ]; then
                         echo "ERROR: Failed to upload $filename"
