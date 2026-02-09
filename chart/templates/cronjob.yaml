@@ -61,10 +61,13 @@ spec:
                   fi
                   
                   # Handle SSE-C
-                  if [ -n "$S3_SSEC_KEY" ]; then
-                    echo -n "$S3_SSEC_KEY" > /tmp/ssec.key
-                    AWS_OPTS="$AWS_OPTS --sse-c AES256 --sse-c-key fileb:///tmp/ssec.key"
-                    echo "Using SSE-C encryption"
+                  if [ -n "$S3_SSEC_KEY_FILE" ]; then
+                    if [ -f "$S3_SSEC_KEY_FILE" ]; then
+                       AWS_OPTS="$AWS_OPTS --sse-c AES256 --sse-c-key fileb://$S3_SSEC_KEY_FILE"
+                       echo "Using SSE-C encryption"
+                    else
+                       echo "WARNING: SSE-C key file defined but not found at $S3_SSEC_KEY_FILE"
+                    fi
                   fi
                   
                   # Check if backup directory exists and has files
@@ -140,12 +143,10 @@ spec:
                 - name: AWS_DEFAULT_REGION
                   value: {{ .Values.backup.s3.region | quote }}
                 {{- end }}
+                {{- end }}
                 {{- if .Values.backup.s3.ssec.enabled }}
-                - name: S3_SSEC_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ .Values.backup.s3.ssec.secretName }}
-                      key: {{ .Values.backup.s3.ssec.secretKey }}
+                - name: S3_SSEC_KEY_FILE
+                  value: "/var/run/secrets/ssec/{{ .Values.backup.s3.ssec.secretKey }}"
                 {{- end }}
               volumeMounts:
                 - name: tang-keys
@@ -153,6 +154,11 @@ spec:
                   readOnly: true
                 - name: tmp
                   mountPath: /tmp
+                {{- if .Values.backup.s3.ssec.enabled }}
+                - name: ssec-key
+                  mountPath: /var/run/secrets/ssec
+                  readOnly: true
+                {{- end }}
               resources:
                 {{- toYaml .Values.backup.resources | nindent 16 }}
           volumes:
@@ -161,6 +167,11 @@ spec:
                 claimName: {{ include "tang.fullname" . }}-keys
             - name: tmp
               emptyDir: {}
+            {{- if .Values.backup.s3.ssec.enabled }}
+            - name: ssec-key
+              secret:
+                secretName: {{ .Values.backup.s3.ssec.secretName }}
+            {{- end }}
           affinity:
             podAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
