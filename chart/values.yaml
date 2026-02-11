@@ -94,8 +94,12 @@ backup:
       # Key within the secret
       secretKey: "key"
   # Name of Kubernetes secret containing AWS credentials
-  # Secret should have keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+  # Secret should have keys defined below
   secretName: "tang-s3-backup-secret"
+  # Keys within the secret
+  secretKeys:
+    awsAccessKeyId: AWS_ACCESS_KEY_ID
+    awsSecretAccessKey: AWS_SECRET_ACCESS_KEY
   # Retention: number of days to keep backups (0 = keep all)
   retentionDays: 30
   resources:
