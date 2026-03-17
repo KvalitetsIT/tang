@@ -42,6 +42,9 @@ spec:
               - matchPattern: "*"
     - toFQDNs:
         - matchName: {{ .Values.backup.s3.endpoint | trimPrefix "https://" | trimPrefix "http://" | splitList "/" | first | quote }}
+        {{- if .Values.networkPolicy.egressFQDNMatchPattern }}
+        - matchPattern: {{ .Values.networkPolicy.egressFQDNMatchPattern | quote }}
+        {{- end }}
       toPorts:
         - ports:
             - port: "443"

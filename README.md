@@ -145,8 +145,39 @@ The following table lists the configurable parameters of the Tang chart and thei
 | `securityContext` | Pod security context | See values.yaml |
 | `readinessProbe` | Container readiness probe configuration | See values.yaml |
 | `resources` | CPU/Memory resource requests/limits | `{"limits": {"cpu": "100m", "memory": "128Mi"}, "requests": {"cpu": "50m", "memory": "64Mi"}}` |
+| `networkPolicy.enabled` | Enable NetworkPolicy and CiliumNetworkPolicy | `true` |
+| `networkPolicy.egressFQDNMatchPattern` | Wildcard FQDN pattern for egress to S3 endpoint (Cilium). Use when Cilium has registered the S3 IP under a wildcard identity (e.g. `*.your-objectstorage.com`). Leave empty if not needed. | `""` |
+| `backup.enabled` | Enable S3 backup CronJob | `false` |
+| `backup.schedule` | CronJob schedule | `"0 2 * * *"` |
+| `backup.image.repository` | Backup job image repository | `amazon/aws-cli` |
+| `backup.image.tag` | Backup job image tag | `latest` |
+| `backup.s3.bucket` | S3 bucket name | `""` |
+| `backup.s3.region` | S3 region | `""` |
+| `backup.s3.endpoint` | S3-compatible endpoint URL | `""` |
+| `backup.s3.prefix` | Prefix/folder in S3 bucket | `"tang-backups"` |
+| `backup.s3.ssec.enabled` | Enable SSE-C encryption for S3 backups | `false` |
+| `backup.s3.ssec.secretName` | Secret containing the 32-byte AES256 SSE-C key | `"tang-s3-ssec-key"` |
+| `backup.s3.ssec.secretKey` | Key within the SSE-C secret | `"key"` |
+| `backup.secretName` | Secret containing AWS credentials | `"tang-s3-backup-secret"` |
+| `backup.retentionDays` | Number of days to retain backups (0 = keep all) | `30` |
 
 **Note**: When `replicaCount > 1`, pods will automatically use `podAntiAffinity` to run on different nodes for high availability.
+
+#### Cilium FQDN wildcard egress
+
+If you use Cilium and the S3 endpoint IP is registered under a wildcard identity (e.g. `*.your-objectstorage.com`), `matchName` alone may not match. Set `networkPolicy.egressFQDNMatchPattern` to allow traffic via the wildcard identity as well:
+
+```yaml
+networkPolicy:
+  enabled: true
+  egressFQDNMatchPattern: "*.your-objectstorage.com"
+
+backup:
+  s3:
+    endpoint: "https://hel1.your-objectstorage.com"
+```
+
+If your endpoint has no subdomain (e.g. `https://s3.example.com` with no further subdomain), leave `egressFQDNMatchPattern` empty to avoid an overly broad wildcard rule.
 
 ### S3 Backup Key Generation (SSE-C)
 
