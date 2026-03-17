@@ -148,6 +148,8 @@ spec:
                 - name: S3_SSEC_KEY_FILE
                   value: "/var/run/secrets/ssec/{{ .Values.backup.s3.ssec.secretKey }}"
                 {{- end }}
+                - name: AWS_EC2_METADATA_DISABLED
+                  value: "true"
               volumeMounts:
                 - name: tang-keys
                   mountPath: /var/db/tang
