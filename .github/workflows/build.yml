@@ -3,11 +3,11 @@ name: CICD
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 03 * * *"        
+    - cron: "0 03 * * *"
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   build:
@@ -16,6 +16,8 @@ jobs:
     steps:
       # Checkout source code
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
@@ -58,7 +60,7 @@ jobs:
 
       - name: Is Tag Build
         id: tag
-        if:  ${{ startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_OUTPUT
 
       - name: Build and test helm chart
