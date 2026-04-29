@@ -1,0 +1,21 @@
+name: GitHub Actions security analysis
+
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/**"
+
+jobs:
+  zizmor:
+    name: Run zizmor
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+      actions: read
+    uses: KvalitetsIT/kit-git-workflows/.github/workflows/reusable-zizmor.yaml@main
