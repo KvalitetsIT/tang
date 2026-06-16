@@ -4,6 +4,9 @@ metadata:
   name: {{ include "tang.fullname" . }}
   labels:
     {{- include "tang.labels" . | nindent 4 }}
+    {{- with .Values.service.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:

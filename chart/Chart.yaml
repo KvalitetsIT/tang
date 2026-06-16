@@ -4,3 +4,7 @@ description: A Helm chart for Tang server
 type: application
 version: 0.1.0
 appVersion: "latest"
+dependencies:
+  - name: gateway-routes
+    version: 0.0.7
+    repository: https://raw.githubusercontent.com/KvalitetsIT/helm-repo/master/

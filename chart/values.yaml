@@ -10,23 +10,6 @@ service:
   type: ClusterIP
   port: 8080
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
-  hosts:
-    - host: tang.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-  #  - secretName: tang-tls
-  #    hosts:
-  #      - tang.local
-
 persistence:
   accessMode: ReadWriteOnce
   size: 1Gi
